@@ -1,5 +1,3 @@
-from modules import Embedding
+import torch
 
-e = Embedding(2,5,False)
-
-print(e.embedding_table.weight.data)
+a = torch
