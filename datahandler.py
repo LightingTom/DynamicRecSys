@@ -6,7 +6,7 @@ import pickle
 
 class DataHandler:
 
-    def __init__(self, dataset_path, batch_size, max_sess_reps, lt_internalsize, time_resolution, use_day, min_time,
+    def __init__(self, dataset_path, batch_size, max_sess_reps, lt_internalsize, time_resolution, min_time,
                  gap_strat):
         # LOAD DATASET
         self.dataset_path = dataset_path
@@ -30,7 +30,7 @@ class DataHandler:
         # batch control
         self.gap_strat = gap_strat
         self.time_resolution = time_resolution
-        self.use_day = use_day
+        self.use_day = True
         self.time_factor = 24 if self.use_day else 1
         self.min_time = min_time / self.time_factor
         self.dividend = 3600 * self.time_factor

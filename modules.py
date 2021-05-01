@@ -1,10 +1,8 @@
 import torch
 
 import torch.nn as nn
-import torch.nn.functional as F
 
 from torch.autograd import Variable
-from DataHandler import RNNDataHandler
 
 
 # embedding layer
@@ -82,10 +80,9 @@ class Time_Loss(nn.Module):
 
 
 class DynamicRecModel:
-    def __init__(self, dim, dropout, params, flags, datahandler, tester, time_threshold):
+    def __init__(self, dim, dropout, params, datahandler, tester, time_threshold):
         self.dim = dim
         self.params = params
-        self.flags = flags
         self.datahandler = datahandler
         self.tester = tester
         self.time_threshold = time_threshold
@@ -244,9 +241,6 @@ class DynamicRecModel:
         embedded_X = self.item_embed(X)
 
         lengths = Variable(torch.cuda.FloatTensor(session_lengths).view(-1,1))
-        sum_X = embedded_X.sum(1)
-        mean_X = sum_X.div(lengths)
-
         # -1 to get the idx of the array
         lengths = lengths.long() - 1
 
@@ -266,7 +260,7 @@ class DynamicRecModel:
         first_loss = self.cross_entropy_loss(first_pred, first_targets)
         sum_first_loss = first_loss.sum(0)
         mean_first_loss = sum_first_loss / embedded_X.size(0)
-        time_loss = self.time_loss_func(times, T_targets, self.params['EPSILON'])
+        time_loss = self.time_loss_func(times, T_targets, 1)
         mask = Variable(T_targets.data.ge(self.time_threshold).float())
         time_loss = time_loss * mask
         non_zero_count = 0
@@ -275,8 +269,7 @@ class DynamicRecModel:
                 non_zero_count += 1
         time_loss_divisor = Variable(torch.cuda.FloatTensor([max(non_zero_count, 1)]))
         mean_time_loss = time_loss.sum(0) / time_loss_divisor
-        combined_loss = self.params["ALPHA"] * mean_time_loss + self.params["BETA"] * mean_loss + self.params[
-            "GAMMA"] * mean_first_loss
+        combined_loss = 0.45 * mean_time_loss + 0.45 * mean_loss + 0.1 * mean_first_loss
         combined_loss.backward()
 
         # update parameters
@@ -285,8 +278,8 @@ class DynamicRecModel:
         self.model_optimizer.step()
         return mean_loss.data[0]
 
-    def predict_on_batch(self, items, session_reps, sess_time_reps, user_list, item_targets, time_targets,
-                         first_rec_targets, session_lengths, session_rep_lengths, time_error):
+    def predict_on_batch(self, items, session_reps, sess_time_reps, user_list, time_targets,
+                        session_lengths, session_rep_lengths, time_error):
         # Get batch data into cuda
         X, sessions, session_gaps, users = self.process_batch_inputs(items, session_reps, sess_time_reps, user_list)
 
@@ -316,14 +309,11 @@ class DynamicRecModel:
         embedded_X = self.item_embed(X)
 
         lengths = Variable(torch.cuda.FloatTensor(session_lengths).view(-1,1))
-        sum_X = embedded_X.sum(1)
-        mean_X = sum_X.div(lengths)
-
         # -1 get the array index
         lengths = lengths.long() - 1
 
         # call forward on the intra RNN
-        recommend_output, intra_hidden_out = self.intra_rnn(embedded_X, inter_last_hidden, lengths)
+        recommend_output, intra_hidden_out = self.intra_model(embedded_X, inter_last_hidden, lengths)
         self.datahandler.store_user_session_representations(intra_hidden_out.data[0], user_list, time_targets)
         k_values, k_predictions = torch.topk(torch.cat((first_pred.unsqueeze(1), recommend_output), 1),
                                              self.params["TOP_K"])
