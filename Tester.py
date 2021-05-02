@@ -80,7 +80,7 @@ class Tester:
 
     def evaluate_batch_time(self, time_predictions, time_targets):
         for i in range(len(time_targets)):
-            self.evaluate_time(time_predictions.data[i], time_targets[i])
+            self.evaluate_time(time_predictions.data[i].item(), time_targets[i])
 
     def get_recall_mrr_result(self):
         res = "Cumulative\n"

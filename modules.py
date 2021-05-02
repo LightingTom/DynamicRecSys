@@ -240,7 +240,7 @@ class DynamicRecModel:
         # embed items
         embedded_X = self.item_embed(X)
 
-        lengths = Variable(torch.cuda.FloatTensor(session_lengths).view(-1,1))
+        lengths = Variable(torch.cuda.FloatTensor(session_lengths).view(-1, 1))
         # -1 to get the idx of the array
         lengths = lengths.long() - 1
 
@@ -279,7 +279,7 @@ class DynamicRecModel:
         return mean_loss.data[0]
 
     def predict_on_batch(self, items, session_reps, sess_time_reps, user_list, time_targets,
-                        session_lengths, session_rep_lengths, time_error):
+                         session_lengths, session_rep_lengths, time_error):
         # Get batch data into cuda
         X, sessions, session_gaps, users = self.process_batch_inputs(items, session_reps, sess_time_reps, user_list)
 
@@ -295,7 +295,8 @@ class DynamicRecModel:
 
         # inter_RNN
         inter_hidden = self.inter_model.init_hidden(sessions.size(0))
-        inter_last_hidden = self.inter_model(torch.cat((sessions, embedded_session_gaps, embedded_users), 2), inter_hidden, rep_idx)
+        inter_last_hidden = self.inter_model(torch.cat((sessions, embedded_session_gaps, embedded_users), 2),
+                                             inter_hidden, rep_idx)
 
         # get time score and first prediction scores from the inter_RNN
         times = self.time_linear(inter_last_hidden).squeeze()
@@ -308,7 +309,7 @@ class DynamicRecModel:
         # embed items
         embedded_X = self.item_embed(X)
 
-        lengths = Variable(torch.cuda.FloatTensor(session_lengths).view(-1,1))
+        lengths = Variable(torch.cuda.FloatTensor(session_lengths).view(-1, 1))
         # -1 get the array index
         lengths = lengths.long() - 1
 
