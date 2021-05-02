@@ -62,13 +62,13 @@ dims["INTER_INPUT_DIM"] = dims["INTRA_HIDDEN"] + dims["TIME_HIDDEN"] + dims["USE
 dims["INTER_HIDDEN"] = dims["INTRA_HIDDEN"]
 
 datahandler = DataHandler(dataset_path, BATCHSIZE, MAX_SESSION_REPRESENTATIONS, dims["INTRA_HIDDEN"],
-                             dims["TIME_RESOLUTION"], min_time, gap_strat)
+                          dims["TIME_RESOLUTION"], min_time, gap_strat)
 dims["N_ITEMS"] = datahandler.get_num_items()
 N_SESSIONS = datahandler.get_num_training_sessions()
 dims["N_USERS"] = datahandler.get_num_users()
 
 # TODO: Initialize tester
-tester = None
+tester = Tester("Log")
 model = DynamicRecModel(dims, dropout, params, datahandler, tester, time_threshold)
 
 # setting up for training
@@ -105,3 +105,31 @@ while epoch_nr < MAX_EPOCHS:
         batch_nr += 1
         with open(txt_log_name, 'a') as txt_file:
             txt_file.write("Epoch loss: " + str(epoch_loss / batch_nr) + "\n")
+
+    # ***********************************************Testing************************************************************
+    if epoch_nr == MAX_EPOCHS - 1:
+        with open(txt_log_name) as f:
+            f.write("**************************Testing*********************\n")
+        datahandler.reset_user_batch_data_test()
+        items, item_targets, session_lengths, session_reps, session_rep_lengths, user_list, sess_time_reps, time_targets, first_rec_targets = datahandler.get_next_test_batch()
+        model.eval_mode()
+
+        batch_nr = 0
+        while len(items) > int(BATCHSIZE / 2):
+            batch_start_time = time.time()
+            predictions = model.predict_on_batch(items, session_reps, sess_time_reps, user_list, time_targets,
+                                                 session_lengths, session_rep_lengths, True)
+            tester.evaluate_batch(predictions[:, 1:], item_targets, session_lengths, predictions[:, 0],
+                                  first_rec_targets)
+            items, item_targets, session_lengths, session_reps, session_rep_lengths, user_list, sess_time_reps, time_targets, first_rec_targets = datahandler.get_next_test_batch()
+            batch_nr += 1
+        cumulate_recall_mrr_res, time_res, individual_recall_mrr_res = tester.get_result_and_reset()
+        with open(txt_log_name, 'a') as f:
+            f.write(cumulate_recall_mrr_res + "\n\n")
+            f.write(individual_recall_mrr_res + "\n\n")
+            f.write(str(model.get_time_loss_weight().data) + "\n\n")
+            f.write(time_res + "\n\n")
+    with open(txt_log_name, 'a') as f:
+        f.write("Epoch #" + str(epoch_nr) + " Cost Time: " + str(time.time() - start_time_epoch) + "\n\n")
+    epoch_nr += 1
+    epoch_loss = 0
