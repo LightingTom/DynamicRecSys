@@ -14,7 +14,7 @@ class Tester:
         self.recall = [[0] * len(self.k) for _ in range(self.session_length)]
         self.mrr = [[0] * len(self.k) for _ in range(self.session_length)]
 
-        # 特殊对待第一项（因为第一项是根据inter_rnn给出的hidden state作为输入）
+        # 特殊对待第一项预测（因为第一项是根据inter_rnn给出的hidden state作为输入）
         self.first_recall = [0] * len(self.k)
         self.first_mrr = [0] * len(self.k)
         self.first_count = 0
@@ -86,7 +86,7 @@ class Tester:
         res = "Cumulative\n"
         res += "Recall@5\tRecall@10\tRecall@20\tMRR@5\tMRR@10\tMRR@20\n"
 
-        # 特殊对待每隔session的第一个交互
+        # 特殊对待每个session的第一个预测
         res += "First Item\n"
         recall_info = ""
         mrr_info = ""

@@ -16,7 +16,7 @@ SPLIT_ON_TIMESTAMP = False
 
 split_mode = "user"
 
-DATASET_DIR = home + '/Documents/Master/Pytorch testing/datasets/' + dataset
+DATASET_DIR = '/home/dl2021_3/Recsys/datasets'
 
 DATASET_FILE = DATASET_DIR + '/reddit_data.csv'
 DATASET_W_CONVERTED_TIMESTAMPS = DATASET_DIR + '/1_converted_timestamps.pickle'

@@ -26,7 +26,6 @@ SPLIT_FRACTION = 0.8
 
 SEED = 2
 GPU = 0
-gap_strat = ""
 
 torch.manual_seed(SEED)
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -62,7 +61,7 @@ dims["INTER_INPUT_DIM"] = dims["INTRA_HIDDEN"] + dims["TIME_HIDDEN"] + dims["USE
 dims["INTER_HIDDEN"] = dims["INTRA_HIDDEN"]
 
 datahandler = DataHandler(dataset_path, BATCHSIZE, MAX_SESSION_REPRESENTATIONS, dims["INTRA_HIDDEN"],
-                          dims["TIME_RESOLUTION"], min_time, gap_strat)
+                          dims["TIME_RESOLUTION"], min_time)
 dims["N_ITEMS"] = datahandler.get_num_items()
 N_SESSIONS = datahandler.get_num_training_sessions()
 dims["N_USERS"] = datahandler.get_num_users()

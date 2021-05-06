@@ -6,8 +6,7 @@ import pickle
 
 class DataHandler:
 
-    def __init__(self, dataset_path, batch_size, max_sess_reps, lt_internalsize, time_resolution, min_time,
-                 gap_strat):
+    def __init__(self, dataset_path, batch_size, max_sess_reps, intra_hidden_dims, time_resolution, min_time):
         # LOAD DATASET
         self.dataset_path = dataset_path
         self.batch_size = batch_size
@@ -25,10 +24,9 @@ class DataHandler:
 
         # II_RNN stuff
         self.MAX_SESSION_REPRESENTATIONS = max_sess_reps
-        self.LT_INTERNALSIZE = lt_internalsize
+        self.LT_INTERNALSIZE = intra_hidden_dims
 
         # batch control
-        self.gap_strat = gap_strat
         self.time_resolution = time_resolution
         self.use_day = True
         self.time_factor = 24 if self.use_day else 1
@@ -61,36 +59,29 @@ class DataHandler:
         self.delta = self.scale / self.time_resolution
         self.scale += 0.01  # overflow handling
 
-        if self.gap_strat == "":
-            for k in self.trainset.keys():
-                times = []
-                if len(self.trainset[k]) > 0:
-                    times.append(0)
-                for session_index in range(1, len(self.trainset[k])):
-                    gap = self.real_gap(self.trainset[k][session_index][0][0], self.trainset[k][session_index - 1][
-                        self.train_session_lengths[k][session_index - 1]][0])
-                    times.append(gap)
-                self.user_train_times[k] = times
+        for k in self.trainset.keys():
+            times = []
+            if len(self.trainset[k]) > 0:
+                times.append(0)
+            for session_index in range(1, len(self.trainset[k])):
+                gap = self.real_gap(self.trainset[k][session_index][0][0], self.trainset[k][session_index - 1][
+                    self.train_session_lengths[k][session_index - 1]][0])
+                times.append(gap)
+            self.user_train_times[k] = times
 
-                times = []
-                if len(self.trainset[k]) > 0 and len(self.testset[k]) > 0:
-                    gap = self.real_gap(self.testset[k][0][0][0],
-                                        self.trainset[k][-1][self.train_session_lengths[k][-1]][0])
-                    times.append(gap)
-                elif len(self.testset[k]) > 0:
-                    times.append(0)
+            times = []
+            if len(self.trainset[k]) > 0 and len(self.testset[k]) > 0:
+                gap = self.real_gap(self.testset[k][0][0][0],
+                                    self.trainset[k][-1][self.train_session_lengths[k][-1]][0])
+                times.append(gap)
+            elif len(self.testset[k]) > 0:
+                times.append(0)
 
-                for session_index in range(1, len(self.testset[k])):
-                    gap = self.real_gap(self.testset[k][session_index][0][0], self.testset[k][session_index - 1][
-                        self.test_session_lengths[k][session_index - 1]][0])
-                    times.append(gap)
-                self.user_test_times[k] = times
-        else:
-            end_index = self.dataset_path.index("4")
-            pickle_path = self.dataset_path[:end_index] + "gaps_" + self.gap_strat + ".pickle"
-            times = pickle.load(open(pickle_path, "rb"))
-            self.user_train_times = times["train"]
-            self.user_test_times = times["test"]
+            for session_index in range(1, len(self.testset[k])):
+                gap = self.real_gap(self.testset[k][session_index][0][0], self.testset[k][session_index - 1][
+                    self.test_session_lengths[k][session_index - 1]][0])
+                times.append(gap)
+            self.user_test_times[k] = times
 
     def real_gap(self, new_time, old_time):
         gap = (new_time - old_time) / self.dividend
